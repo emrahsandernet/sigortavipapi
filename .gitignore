@@ -206,11 +206,12 @@ typings/
 
 # Nuxt.js build / generate output
 .nuxt
-dist
+frontend/dist/
 
 # Gatsby files
 .cache/
-public
+# NOT ignoring React public folder
+# public
 
 # Storybook build outputs
 .out
