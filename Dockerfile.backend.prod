@@ -1,0 +1,38 @@
+# Production Django backend için Dockerfile
+FROM python:3.11-slim
+
+# Çalışma dizinini ayarla
+WORKDIR /app
+
+# Sistem paketlerini güncelle ve gerekli paketleri yükle
+RUN apt-get update && apt-get install -y \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Python ortam değişkenlerini ayarla
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# Requirements dosyasını kopyala ve bağımlılıkları yükle
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Proje dosyalarını kopyala
+COPY . .
+
+# Static dosyalar için dizin oluştur
+RUN mkdir -p static media
+
+# Static dosyaları topla
+RUN python manage.py collectstatic --noinput
+
+# Non-root user oluştur
+RUN adduser --disabled-password --gecos '' appuser
+RUN chown -R appuser:appuser /app
+USER appuser
+
+# Port
+EXPOSE 8000
+
+# Gunicorn ile production sunucusunu başlat
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "sigorta_api.wsgi:application"] 

@@ -1,0 +1,26 @@
+# Django backend için Dockerfile
+FROM python:3.11-slim
+
+# Çalışma dizinini ayarla
+WORKDIR /app
+
+# Sistem paketlerini güncelle ve gerekli paketleri yükle
+RUN apt-get update && apt-get install -y \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Requirements dosyasını kopyala ve bağımlılıkları yükle
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Proje dosyalarını kopyala
+COPY . .
+
+# Static dosyalar için dizin oluştur
+RUN mkdir -p static media
+
+# Port
+EXPOSE 8000
+
+# Django geliştirme sunucusunu başlat
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"] 
