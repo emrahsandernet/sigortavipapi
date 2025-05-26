@@ -67,6 +67,9 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://localhost",
     "http://127.0.0.1",
+    "http://api.kayaliksigorta.com",
+    "https://api.kayaliksigorta.com",
+    "http://api.kayaliksigorta.com",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -77,6 +80,9 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://api.kayaliksigorta.com",
+    "https://api.kayaliksigorta.com",
+    "http://api.kayaliksigorta.com",
 ]
 
 # CSRF cookie ayarları
