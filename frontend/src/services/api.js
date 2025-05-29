@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'https://api.kayaliksigorta.com/api/v1/';
+const API_URL = 'https://api.kayliksigorta.com/api/v1/';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -88,6 +88,8 @@ export const insuranceCompanyItemService = {
   create: (data) => api.post('insurance-company-items/', data),
   update: (id, data) => api.put(`insurance-company-items/${id}/`, data),
   delete: (id) => api.delete(`insurance-company-items/${id}/`),
+  bulkUpdatePartage: (data) => api.post('insurance-company-items/bulk_update_partage/', data),
+  updatePartageOnly: (id, partage_id) => api.patch(`insurance-company-items/${id}/update_partage_only/`, { partage: partage_id }),
   getActiveItems: () => api.get('insurance-company-items/active_items/'),
   getCarQueryItems: () => api.get('insurance-company-items/car_query_items/'),
   getByQueryType: (query_type) => api.get(`insurance-company-items/by_query_type/?query_type=${query_type}`),

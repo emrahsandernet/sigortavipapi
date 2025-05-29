@@ -100,6 +100,7 @@ def company_login(request):
 
 class RoleViewSet(viewsets.ModelViewSet):
     queryset = Role.objects.all()
+    permission_classes = [IsAuthenticated]
     
     def get_serializer_class(self):
         if self.action == 'retrieve':
@@ -116,10 +117,12 @@ class RoleViewSet(viewsets.ModelViewSet):
 class QueryTypeViewSet(viewsets.ModelViewSet):
     queryset = QueryType.objects.all()
     serializer_class = QueryTypeSerializer
+    permission_classes = [IsAuthenticated]
 
 class RolePermissionViewSet(viewsets.ModelViewSet):
     queryset = RolePermission.objects.all()
     serializer_class = RolePermissionSerializer
+    permission_classes = [IsAuthenticated]
     
     @swagger_auto_schema(
         manual_parameters=[
@@ -164,6 +167,7 @@ class RolePermissionViewSet(viewsets.ModelViewSet):
 class CompanyViewSet(viewsets.ModelViewSet):
     queryset = Company.objects.all()
     serializer_class = CompanySerializer
+    permission_classes = [IsAuthenticated]
     
     @action(detail=True, methods=['get'])
     def users(self, request, pk=None):
@@ -181,6 +185,7 @@ class CompanyViewSet(viewsets.ModelViewSet):
 
 class CompanyUserViewSet(viewsets.ModelViewSet):
     queryset = CompanyUser.objects.all()
+    permission_classes = [IsAuthenticated]
     
     def get_serializer_class(self):
         if self.action in ['create', 'update', 'partial_update']:
@@ -405,6 +410,7 @@ class CompanyUserViewSet(viewsets.ModelViewSet):
 class InsuranceCompanyViewSet(viewsets.ModelViewSet):
     queryset = InsuranceCompany.objects.all()
     serializer_class = InsuranceCompanySerializer
+    permission_classes = [IsAuthenticated]
     
     @action(detail=True, methods=['get'])
     def items(self, request, pk=None):
@@ -415,6 +421,7 @@ class InsuranceCompanyViewSet(viewsets.ModelViewSet):
 
 class PartageViewSet(viewsets.ModelViewSet):
     queryset = Partage.objects.all()
+    permission_classes = [IsAuthenticated]
     
     def get_serializer_class(self):
         if self.action == 'retrieve':
@@ -445,6 +452,7 @@ class PartageViewSet(viewsets.ModelViewSet):
 
 class InsuranceCompanyItemViewSet(viewsets.ModelViewSet):
     queryset = InsuranceCompanyItem.objects.all()
+    permission_classes = [IsAuthenticated]
     
     def get_serializer_class(self):
         if self.action in ['create', 'update', 'partial_update']:
@@ -667,8 +675,103 @@ class InsuranceCompanyItemViewSet(viewsets.ModelViewSet):
             return Response({"error": "query_type_id is required"}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
-            query_type = QueryType.objects.get(pk=query_type_id)
+            query_type = QueryType.objects.get(id=query_type_id)
             item.query_types.remove(query_type)
-            return Response({"status": "query type removed"}, status=status.HTTP_200_OK)
+            return Response({"message": "Query type removed successfully"}, status=status.HTTP_200_OK)
         except QueryType.DoesNotExist:
-            return Response({"error": "query type not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Query type not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['item_ids', 'partage'],
+            properties={
+                'item_ids': openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Schema(type=openapi.TYPE_INTEGER),
+                    description='Güncellenecek öğe ID\'leri',
+                    default=[1, 2, 3]
+                ),
+                'partage': openapi.Schema(type=openapi.TYPE_INTEGER, description='Yeni partaj ID\'si', default=1),
+            },
+        )
+    )
+    @action(detail=False, methods=['post'])
+    def bulk_update_partage(self, request):
+        item_ids = request.data.get('item_ids', [])
+        partage_id = request.data.get('partage')
+        
+        if not item_ids:
+            return Response({"error": "item_ids is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not partage_id:
+            return Response({"error": "partage is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            # Partaj'ın var olup olmadığını kontrol et
+            partage = Partage.objects.get(id=partage_id)
+            
+            # Sadece partaj alanını güncelle - diğer alanları dokunma
+            updated_count = InsuranceCompanyItem.objects.filter(
+                id__in=item_ids
+            ).update(partage=partage)
+            
+            return Response({
+                "message": f"{updated_count} adet öğe başarıyla güncellendi",
+                "updated_count": updated_count,
+                "partage": {
+                    "id": partage.id,
+                    "name": partage.name,
+                    "code": partage.code
+                }
+            }, status=status.HTTP_200_OK)
+            
+        except Partage.DoesNotExist:
+            return Response({"error": "Partage not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['partage'],
+            properties={
+                'partage': openapi.Schema(type=openapi.TYPE_INTEGER, description='Yeni partaj ID\'si', default=1),
+            },
+        )
+    )
+    @action(detail=True, methods=['patch'])
+    def update_partage_only(self, request, pk=None):
+        """
+        Sadece partaj alanını günceller, diğer zorunlu alanları kontrol etmez
+        """
+        item = self.get_object()
+        partage_id = request.data.get('partage')
+        
+        if not partage_id:
+            return Response({"error": "partage is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            # Partaj'ın var olup olmadığını kontrol et
+            partage = Partage.objects.get(id=partage_id)
+            
+            # Sadece partaj alanını güncelle
+            item.partage = partage
+            item.save(update_fields=['partage'])
+            
+            return Response({
+                "message": "Partaj başarıyla güncellendi",
+                "item_id": item.id,
+                "partage": {
+                    "id": partage.id,
+                    "name": partage.name,
+                    "code": partage.code
+                }
+            }, status=status.HTTP_200_OK)
+            
+        except Partage.DoesNotExist:
+            return Response({"error": "Partage not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

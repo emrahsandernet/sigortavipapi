@@ -81,7 +81,7 @@ const UpdatePartage = () => {
 
   const setDefaultPartageOptions = () => {
     setPartageOptions([
-      { id: 50, value: 50 }
+      { id: 1, name: 'Varsayılan Partaj', code: 'default' }
     ]);
   };
 
@@ -127,17 +127,25 @@ const UpdatePartage = () => {
 
     setUpdating(true);
     try {
-      // API'de toplu güncelleme işlemi varsa:
-      // await insuranceCompanyItemService.bulkUpdatePartage(selectedItems, parseInt(selectedPartage, 10));
+      // Toplu güncelleme için API çağrısı
+      const updateData = {
+        item_ids: selectedItems,
+        partage: parseInt(selectedPartage, 10)
+      };
       
-      // Yoksa tek tek güncelleme yapılabilir:
-      const updatePromises = selectedItems.map(itemId => {
-        const formData = new FormData();
-        formData.append('partage', parseInt(selectedPartage, 10));
-        return insuranceCompanyItemService.update(itemId, formData);
-      });
-      
-      await Promise.all(updatePromises);
+      // Önce toplu güncelleme endpoint'ini dene
+      try {
+        await insuranceCompanyItemService.bulkUpdatePartage(updateData);
+      } catch (bulkError) {
+        // Toplu güncelleme başarısız olursa, sadece partaj güncelleyen endpoint'i kullan
+        console.log('Toplu güncelleme başarısız oldu, tek tek güncelleniyor...', bulkError.message);
+        
+        const updatePromises = selectedItems.map(async (itemId) => {
+          return insuranceCompanyItemService.updatePartageOnly(itemId, parseInt(selectedPartage, 10));
+        });
+        
+        await Promise.all(updatePromises);
+      }
       
       setSnackbar({
         open: true,
@@ -146,12 +154,14 @@ const UpdatePartage = () => {
       });
       
       // Güncellemeden sonra listeyi yenile
-      fetchInsuranceCompanyItems();
+      await fetchInsuranceCompanyItems();
       setSelectedItems([]);
       setSelectAll(false);
+      setSelectedPartage('');
     } catch (error) {
       console.error('Partaj güncellenirken hata oluştu:', error);
       const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.detail ||
                           JSON.stringify(error.response?.data) ||
                           'Partaj güncellenirken bir hata oluştu';
       
@@ -197,7 +207,7 @@ const UpdatePartage = () => {
 
       <Paper sx={{ p: 3, mb: 3 }}>
         <Box display="flex" alignItems="center" gap={2}>
-          <FormControl sx={{ minWidth: 200 }}>
+          <FormControl sx={{ minWidth: 200 }} size="small">
             <InputLabel id="partage-label">Partaj</InputLabel>
             <Select
               labelId="partage-label"
@@ -205,6 +215,8 @@ const UpdatePartage = () => {
               onChange={handlePartageChange}
               label="Partaj"
               disabled={updating}
+              size="small"
+              sx={{ height: 45 }}
             >
               <MenuItem value="">Seçiniz</MenuItem>
               {partageOptions.map((option) => (
@@ -213,7 +225,7 @@ const UpdatePartage = () => {
                 </MenuItem>
               ))}
             </Select>
-            <FormHelperText>Tüm seçili şirketlere uygulanacak yeni partaj değeri</FormHelperText>
+      
           </FormControl>
 
           <Button 
@@ -222,6 +234,7 @@ const UpdatePartage = () => {
             startIcon={<SaveIcon />}
             onClick={handleUpdatePartage}
             disabled={updating || !selectedPartage || selectedItems.length === 0}
+            sx={{ height: 45 }}
           >
             {updating ? 'Güncelleniyor...' : 'Seçili Şirketleri Güncelle'}
           </Button>
@@ -285,7 +298,8 @@ const UpdatePartage = () => {
                   <TableCell>{item.username}</TableCell>
                   <TableCell>
                     {item.partage ? (
-                      partageOptions.find(p => p.id === item.partage)?.name || `%${item.partage}`
+                      partageOptions.find(p => p.id === item.partage)?.name || 
+                      `Partaj ID: ${item.partage}`
                     ) : (
                       '-'
                     )}
