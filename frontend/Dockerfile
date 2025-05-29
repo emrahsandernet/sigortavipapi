@@ -14,7 +14,7 @@ RUN npm ci
 COPY . .
 
 # Port
-EXPOSE 3000
+EXPOSE 4040
 
 # React geliştirme sunucusunu başlat
 CMD ["npm", "start"] 
