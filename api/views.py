@@ -107,6 +107,15 @@ class RoleViewSet(viewsets.ModelViewSet):
             return RoleDetailSerializer
         return RoleSerializer
     
+    @action(detail=False, methods=['get'])
+    def all_items_no_pagination(self, request):
+        """
+        Tüm rolleri pagination olmadan döndürür
+        """
+        roles = Role.objects.all()
+        serializer = self.get_serializer(roles, many=True)
+        return Response(serializer.data)
+    
     @action(detail=True, methods=['get'])
     def permissions(self, request, pk=None):
         role = self.get_object()
@@ -119,10 +128,28 @@ class QueryTypeViewSet(viewsets.ModelViewSet):
     serializer_class = QueryTypeSerializer
     permission_classes = [IsAuthenticated]
 
+    @action(detail=False, methods=['get'])
+    def all_items_no_pagination(self, request):
+        """
+        Tüm sorgu türlerini pagination olmadan döndürür
+        """
+        query_types = QueryType.objects.all()
+        serializer = self.get_serializer(query_types, many=True)
+        return Response(serializer.data)
+
 class RolePermissionViewSet(viewsets.ModelViewSet):
     queryset = RolePermission.objects.all()
     serializer_class = RolePermissionSerializer
     permission_classes = [IsAuthenticated]
+    
+    @action(detail=False, methods=['get'])
+    def all_items_no_pagination(self, request):
+        """
+        Tüm rol izinlerini pagination olmadan döndürür
+        """
+        permissions = RolePermission.objects.all()
+        serializer = self.get_serializer(permissions, many=True)
+        return Response(serializer.data)
     
     @swagger_auto_schema(
         manual_parameters=[
@@ -169,6 +196,15 @@ class CompanyViewSet(viewsets.ModelViewSet):
     serializer_class = CompanySerializer
     permission_classes = [IsAuthenticated]
     
+    @action(detail=False, methods=['get'])
+    def all_items_no_pagination(self, request):
+        """
+        Tüm şirketleri pagination olmadan döndürür
+        """
+        companies = Company.objects.all()
+        serializer = self.get_serializer(companies, many=True)
+        return Response(serializer.data)
+    
     @action(detail=True, methods=['get'])
     def users(self, request, pk=None):
         company = self.get_object()
@@ -205,6 +241,15 @@ class CompanyUserViewSet(viewsets.ModelViewSet):
             except CompanyUser.DoesNotExist:
                 return CompanyUser.objects.none()
         return CompanyUser.objects.none()
+    
+    @action(detail=False, methods=['get'])
+    def all_items_no_pagination(self, request):
+        """
+        Kullanıcının şirketindeki tüm kullanıcıları pagination olmadan döndürür
+        """
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
     
     def create(self, request, *args, **kwargs):
         # Sadece admin kullanıcılar yeni kullanıcı ekleyebilir
@@ -412,6 +457,15 @@ class InsuranceCompanyViewSet(viewsets.ModelViewSet):
     serializer_class = InsuranceCompanySerializer
     permission_classes = [IsAuthenticated]
     
+    @action(detail=False, methods=['get'])
+    def all_items_no_pagination(self, request):
+        """
+        Tüm sigorta şirketlerini pagination olmadan döndürür
+        """
+        insurance_companies = InsuranceCompany.objects.all()
+        serializer = self.get_serializer(insurance_companies, many=True)
+        return Response(serializer.data)
+    
     @action(detail=True, methods=['get'])
     def items(self, request, pk=None):
         company = self.get_object()
@@ -427,6 +481,15 @@ class PartageViewSet(viewsets.ModelViewSet):
         if self.action == 'retrieve':
             return PartageDetailSerializer
         return PartageSerializer
+    
+    @action(detail=False, methods=['get'])
+    def all_items_no_pagination(self, request):
+        """
+        Tüm partajları pagination olmadan döndürür
+        """
+        partages = Partage.objects.all()
+        serializer = self.get_serializer(partages, many=True)
+        return Response(serializer.data)
     
     @action(detail=True, methods=['get'])
     def related_companies(self, request, pk=None):
@@ -460,6 +523,15 @@ class InsuranceCompanyItemViewSet(viewsets.ModelViewSet):
         if self.action == 'retrieve':
             return InsuranceCompanyItemDetailSerializer
         return InsuranceCompanyItemSerializer
+    
+    @action(detail=False, methods=['get'])
+    def all_items_no_pagination(self, request):
+        """
+        Tüm InsuranceCompanyItem'ları pagination olmadan döndürür
+        """
+        items = InsuranceCompanyItem.objects.all()
+        serializer = self.get_serializer(items, many=True)
+        return Response(serializer.data)
     
     @action(detail=False, methods=['get'])
     def active_items(self, request):
