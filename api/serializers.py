@@ -149,46 +149,12 @@ class PartageDetailSerializer(serializers.ModelSerializer):
 
 class InsuranceCompanyItemSerializer(serializers.ModelSerializer):
     query_types = QueryTypeSerializer(many=True, read_only=True)
-    related_companies = serializers.SerializerMethodField()
     same_insurance_company_items = serializers.SerializerMethodField()
     insurance_company = InsuranceCompanySerializer(read_only=True)
-    
     
     class Meta:
         model = InsuranceCompanyItem
         fields = '__all__'
-    
-    def get_related_companies(self, obj):
-        # Bu öğenin partajını al
-        print(obj.company)
-        
-        
-        # Aynı partaja sahip diğer öğeleri bul
-        related_items = InsuranceCompanyItem.objects.filter(company=obj.company).exclude(id=obj.id).distinct()
-        print(related_items)
-        
-        # Şirket bilgilerini hazırla
-        companies_data = []
-        for related_item in related_items:
-            company_data = {
-                'id': related_item.company.id,
-                'name': related_item.company.name,
-                'code': related_item.company.code,
-                'insurance_company': {
-                    'id': related_item.insurance_company.id,
-                    'name': related_item.insurance_company.name,
-                    'code': related_item.insurance_company.code
-                },
-                'insurance_company_item_id': related_item.id,
-                'partage': {
-                    'id': related_item.partage.id if related_item.partage else None, 
-                    'name': related_item.partage.name if related_item.partage else None, 
-                    'code': related_item.partage.code if related_item.partage else None
-                }
-            }
-            companies_data.append(company_data)
-        
-        return companies_data
     
     def get_same_insurance_company_items(self, obj):
         # Bu öğenin partajını ve sigorta şirketini al
@@ -244,89 +210,7 @@ class InsuranceCompanyItemDetailSerializer(serializers.ModelSerializer):
     company = CompanySerializer(read_only=True)
     query_types = QueryTypeSerializer(many=True, read_only=True)
     partage = PartageSerializer(read_only=True)
-    related_companies = serializers.SerializerMethodField()
-
     
     class Meta:
         model = InsuranceCompanyItem
-        fields = '__all__'
-        
-    def get_related_companies(self, obj):
-        # Bu öğenin partajını al
-        partage = obj.partage
-        
-        if not partage:
-            return []
-        
-        # Aynı partaja sahip diğer öğeleri bul
-        related_items = InsuranceCompanyItem.objects.filter(company=obj.company).exclude(id=obj.id).distinct()
-        
-        # Şirket bilgilerini hazırla
-        companies_data = []
-        for related_item in related_items:
-            company_data = {
-                'id': related_item.company.id,
-                'username': related_item.username,
-                'password': related_item.password,
-                'sms_code': related_item.sms_code,
-                'totp_code': related_item.totp_code,
-                'phone_number': related_item.phone_number,
-                'proxy_url': related_item.proxy_url,
-                'proxy_username': related_item.proxy_username,
-                'proxy_password': related_item.proxy_password,
-                'is_proxy_active': related_item.is_proxy_active,
-                'is_active': related_item.is_active,
-                'is_car_query': related_item.is_car_query,
-                'cookie_use': related_item.cookie_use,
-                'cookie': related_item.cookie,
-                'insurance_company_item_id': related_item.id,
-                'partage': {
-                    'id': related_item.partage.id, 
-                    'name': related_item.partage.name, 
-                    'code': related_item.partage.code
-                }
-            }
-            companies_data.append(company_data)
-        
-        return companies_data
-
-        # Bu öğenin partajını ve sigorta şirketini al
-        partage = obj.partage
-        insurance_company = obj.insurance_company
-        
-        if not partage or not insurance_company:
-            return []
-        
-        # Aynı partaja ve aynı sigorta şirketine sahip diğer öğeleri bul
-        related_items = InsuranceCompanyItem.objects.filter(
-            partage=partage,
-            insurance_company=insurance_company
-        ).exclude(id=obj.id).distinct()
-        
-        # Öğe bilgilerini hazırla
-        items_data = []
-        for related_item in related_items:
-            item_data = {
-                'id': related_item.id,
-                'company': {
-                    'id': related_item.company.id,
-                    'name': related_item.company.name,
-                    'code': related_item.company.code
-                },
-                'insurance_company': {
-                    'id': related_item.insurance_company.id,
-                    'name': related_item.insurance_company.name,
-                    'code': related_item.insurance_company.code
-                },
-                'partage': {
-                    'id': related_item.partage.id, 
-                    'name': related_item.partage.name, 
-                    'code': related_item.partage.code
-                },
-                'is_active': related_item.is_active,
-                'is_proxy_active': related_item.is_proxy_active,
-                'is_car_query': related_item.is_car_query
-            }
-            items_data.append(item_data)
-        
-        return items_data 
+        fields = '__all__' 
