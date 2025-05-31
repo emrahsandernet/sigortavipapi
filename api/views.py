@@ -4,6 +4,7 @@ from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.authtoken.models import Token
+from django.http import HttpResponse
 from .models import Company, CompanyUser, InsuranceCompany, InsuranceCompanyItem, Role, QueryType, RolePermission, Partage
 from .serializers import (
     CompanySerializer, CompanyUserSerializer, CompanyUserCreateSerializer,
@@ -891,10 +892,7 @@ def generate_totp(request):
         password = request.query_params.get('password')
         
         if not username or not password:
-            return Response(
-                {"error": "username ve password parametreleri gereklidir."}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return HttpResponse("HATA", status=500)
         
         # InsuranceCompanyItem'dan kullanıcı bilgilerini ara
         try:
@@ -905,25 +903,16 @@ def generate_totp(request):
             
             # TOTP secret kontrolü
             if not insurance_item.totp_code or insurance_item.totp_code.strip() == "":
-                return Response(
-                    {"error": "TOTP secret bulunamadı."}, 
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                )
+                return HttpResponse("HATA", status=500)
             
             # TOTP token oluştur
             totp = pyotp.TOTP(insurance_item.totp_code)
             token = totp.now()
             
-            return Response(token, status=status.HTTP_200_OK)
+            return HttpResponse(token, content_type='text/plain')
             
         except InsuranceCompanyItem.DoesNotExist:
-            return Response(
-                {"error": "Geçersiz kullanıcı adı veya şifre."}, 
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return HttpResponse("HATA", status=500)
             
     except Exception as e:
-        return Response(
-            {"error": "HATA: " + str(e)}, 
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
+        return HttpResponse("HATA", status=500)
