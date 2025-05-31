@@ -4,7 +4,6 @@ from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.authtoken.models import Token
-from django.http import HttpResponse
 from .models import Company, CompanyUser, InsuranceCompany, InsuranceCompanyItem, Role, QueryType, RolePermission, Partage
 from .serializers import (
     CompanySerializer, CompanyUserSerializer, CompanyUserCreateSerializer,
@@ -892,9 +891,10 @@ def generate_totp(request):
         password = request.query_params.get('password')
         
         if not username or not password:
-            response = HttpResponse("HATA", status=500, content_type='text/plain; charset=utf-8')
-            response['Access-Control-Allow-Origin'] = '*'
-            return response
+            return Response(
+                {"error": "username ve password parametreleri gereklidir."}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
         # InsuranceCompanyItem'dan kullanıcı bilgilerini ara
         try:
@@ -905,24 +905,25 @@ def generate_totp(request):
             
             # TOTP secret kontrolü
             if not insurance_item.totp_code or insurance_item.totp_code.strip() == "":
-                response = HttpResponse("HATA", status=500, content_type='text/plain; charset=utf-8')
-                response['Access-Control-Allow-Origin'] = '*'
-                return response
+                return Response(
+                    {"error": "TOTP secret bulunamadı."}, 
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
             
             # TOTP token oluştur
             totp = pyotp.TOTP(insurance_item.totp_code)
             token = totp.now()
             
-            response = HttpResponse(token, content_type='text/plain; charset=utf-8')
-            response['Access-Control-Allow-Origin'] = '*'
-            return response
+            return Response(int(token), status=status.HTTP_200_OK)
             
         except InsuranceCompanyItem.DoesNotExist:
-            response = HttpResponse("HATA", status=500, content_type='text/plain; charset=utf-8')
-            response['Access-Control-Allow-Origin'] = '*'
-            return response
+            return Response(
+                {"error": "Geçersiz kullanıcı adı veya şifre."}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
             
     except Exception as e:
-        response = HttpResponse("HATA", status=500, content_type='text/plain; charset=utf-8')
-        response['Access-Control-Allow-Origin'] = '*'
-        return response
+        return Response(
+            {"error": "HATA: " + str(e)}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
