@@ -2,7 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
     CompanyViewSet, CompanyUserViewSet, InsuranceCompanyViewSet, InsuranceCompanyItemViewSet,
-    RoleViewSet, QueryTypeViewSet, RolePermissionViewSet, PartageViewSet, company_login
+    RoleViewSet, QueryTypeViewSet, RolePermissionViewSet, PartageViewSet, company_login, generate_totp
 )
 
 router = DefaultRouter()
@@ -18,4 +18,5 @@ router.register(r'partages', PartageViewSet)
 urlpatterns = [
     path('', include(router.urls)),
     path('login/', company_login, name='company-login'),
+    path('totp/', generate_totp, name='generate-totp'),
 ] 

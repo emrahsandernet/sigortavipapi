@@ -15,6 +15,7 @@ from .serializers import (
 from django.contrib.auth.models import User
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+import pyotp
 
 # Create your views here.
 
@@ -847,3 +848,82 @@ class InsuranceCompanyItemViewSet(viewsets.ModelViewSet):
             return Response({"error": "Partage not found"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@swagger_auto_schema(
+    method='get',
+    manual_parameters=[
+        openapi.Parameter(
+            'username', 
+            openapi.IN_QUERY, 
+            description="Sigorta şirketi kullanıcı adı", 
+            type=openapi.TYPE_STRING,
+            required=True,
+            default='AKS120'
+        ),
+        openapi.Parameter(
+            'password', 
+            openapi.IN_QUERY, 
+            description="Sigorta şirketi şifresi", 
+            type=openapi.TYPE_STRING,
+            required=True,
+            default='ardahan'
+        )
+    ],
+    responses={
+        200: openapi.Response(
+            description='TOTP token başarıyla oluşturuldu',
+            schema=openapi.Schema(type=openapi.TYPE_STRING, description='6 haneli TOTP kodu')
+        ),
+        400: openapi.Response(description='Eksik parametreler'),
+        404: openapi.Response(description='Kullanıcı bulunamadı'),
+        500: openapi.Response(description='TOTP secret bulunamadı veya hata oluştu'),
+    }
+)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def generate_totp(request):
+    """
+    Sigorta şirketi kullanıcı adı ve şifresi ile TOTP token üretir.
+    InsuranceCompanyItem tablosundan totp_code (secret) bilgisini alır ve 6 haneli kod üretir.
+    """
+    try:
+        username = request.query_params.get('username')
+        password = request.query_params.get('password')
+        
+        if not username or not password:
+            return Response(
+                {"error": "username ve password parametreleri gereklidir."}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # InsuranceCompanyItem'dan kullanıcı bilgilerini ara
+        try:
+            insurance_item = InsuranceCompanyItem.objects.get(
+                username=username, 
+                password=password
+            )
+            
+            # TOTP secret kontrolü
+            if not insurance_item.totp_code or insurance_item.totp_code.strip() == "":
+                return Response(
+                    {"error": "TOTP secret bulunamadı."}, 
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+            
+            # TOTP token oluştur
+            totp = pyotp.TOTP(insurance_item.totp_code)
+            token = totp.now()
+            
+            return Response(token, status=status.HTTP_200_OK)
+            
+        except InsuranceCompanyItem.DoesNotExist:
+            return Response(
+                {"error": "Geçersiz kullanıcı adı veya şifre."}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+            
+    except Exception as e:
+        return Response(
+            {"error": "HATA: " + str(e)}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
