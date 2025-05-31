@@ -880,7 +880,7 @@ class InsuranceCompanyItemViewSet(viewsets.ModelViewSet):
     }
 )
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def generate_totp(request):
     """
     Sigorta şirketi kullanıcı adı ve şifresi ile TOTP token üretir.
