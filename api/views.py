@@ -892,7 +892,9 @@ def generate_totp(request):
         password = request.query_params.get('password')
         
         if not username or not password:
-            return HttpResponse("HATA", status=500)
+            response = HttpResponse("HATA", status=500, content_type='text/plain; charset=utf-8')
+            response['Access-Control-Allow-Origin'] = '*'
+            return response
         
         # InsuranceCompanyItem'dan kullanıcı bilgilerini ara
         try:
@@ -903,16 +905,24 @@ def generate_totp(request):
             
             # TOTP secret kontrolü
             if not insurance_item.totp_code or insurance_item.totp_code.strip() == "":
-                return HttpResponse("HATA", status=500)
+                response = HttpResponse("HATA", status=500, content_type='text/plain; charset=utf-8')
+                response['Access-Control-Allow-Origin'] = '*'
+                return response
             
             # TOTP token oluştur
             totp = pyotp.TOTP(insurance_item.totp_code)
             token = totp.now()
             
-            return HttpResponse(token, content_type='text/plain')
+            response = HttpResponse(token, content_type='text/plain; charset=utf-8')
+            response['Access-Control-Allow-Origin'] = '*'
+            return response
             
         except InsuranceCompanyItem.DoesNotExist:
-            return HttpResponse("HATA", status=500)
+            response = HttpResponse("HATA", status=500, content_type='text/plain; charset=utf-8')
+            response['Access-Control-Allow-Origin'] = '*'
+            return response
             
     except Exception as e:
-        return HttpResponse("HATA", status=500)
+        response = HttpResponse("HATA", status=500, content_type='text/plain; charset=utf-8')
+        response['Access-Control-Allow-Origin'] = '*'
+        return response
