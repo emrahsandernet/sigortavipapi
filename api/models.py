@@ -155,7 +155,7 @@ class InsuranceCompanyItem(models.Model):
     phone_number = models.CharField(verbose_name="Telefon Numarası", max_length=255,null=True, blank=True)
     proxy_url = models.CharField(verbose_name="Proxy URL", max_length=255,null=True, blank=True)
     proxy_username = models.CharField(verbose_name="Proxy Kullanıcı Adı", max_length=255,null=True, blank=True)
-    proxy_password = models.CharField(verbose_name="Proxy Şifre", max_length=255)
+    proxy_password = models.CharField(verbose_name="Proxy Şifre", max_length=255,null=True, blank=True)
     is_proxy_active = models.BooleanField(verbose_name="Proxy Aktif mi?", default=True)
     is_active = models.BooleanField(verbose_name="Aktif mi?", default=True)
     is_car_query = models.BooleanField(verbose_name="Araç Sorgulama", default=False)
