@@ -112,7 +112,7 @@ class CompanyUser(models.Model):
 class InsuranceCompany(models.Model):
     name = models.CharField(verbose_name="Sigorta Şirketi Adı", max_length=255)
     image = models.ImageField(verbose_name="Sigorta Şirketi Logosu", upload_to="insurance_company_logos/")
-    login_url = models.CharField(verbose_name="Giriş URL", max_length=255)
+    login_url = models.CharField(verbose_name="Giriş URL", max_length=255,null=True, blank=True)
     explorer_url = models.CharField(verbose_name="Explorer URL", max_length=255)
     code = models.CharField(verbose_name="Sigorta Şirketi Kodu", max_length=255, unique=True)
     created_at = models.DateTimeField(verbose_name="Oluşturulma Tarihi", auto_now_add=True)
