@@ -517,6 +517,7 @@ class PartageViewSet(viewsets.ModelViewSet):
 class InsuranceCompanyItemViewSet(viewsets.ModelViewSet):
     queryset = InsuranceCompanyItem.objects.all()
     permission_classes = [IsAuthenticated]
+    pagination_class = None
     
     def get_serializer_class(self):
         if self.action in ['create', 'update', 'partial_update']:
@@ -846,6 +847,40 @@ class InsuranceCompanyItemViewSet(viewsets.ModelViewSet):
             
         except Partage.DoesNotExist:
             return Response({"error": "Partage not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['cookie'],
+            properties={
+                'cookie': openapi.Schema(type=openapi.TYPE_STRING, description='Cookie metni', default='session_id=abc123; token=xyz789'),
+            },
+        )
+    )
+    @action(detail=True, methods=['post'])
+    def update_cookie(self, request, pk=None):
+        """
+        Belirtilen InsuranceCompanyItem'ın cookie'sini günceller
+        """
+        item = self.get_object()
+        cookie = request.data.get('cookie')
+        
+        if cookie is None:
+            return Response({"error": "cookie is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            # Cookie'yi güncelle
+            item.cookie = cookie
+            item.save(update_fields=['cookie'])
+            
+            return Response({
+                "message": "Cookie başarıyla güncellendi",
+                "item_id": item.id,
+                "cookie_length": len(cookie) if cookie else 0
+            }, status=status.HTTP_200_OK)
+            
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
