@@ -454,9 +454,10 @@ class CompanyUserViewSet(viewsets.ModelViewSet):
         return Response({"has_permission": has_permission})
 
 class InsuranceCompanyViewSet(viewsets.ModelViewSet):
-    queryset = InsuranceCompany.objects.all()
+    queryset = InsuranceCompany.objects.all().order_by('name')
     serializer_class = InsuranceCompanySerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = None
     
     @action(detail=False, methods=['get'])
     def all_items_no_pagination(self, request):
@@ -515,8 +516,8 @@ class PartageViewSet(viewsets.ModelViewSet):
         return Response(companies_data)
 
 class InsuranceCompanyItemViewSet(viewsets.ModelViewSet):
-    queryset = InsuranceCompanyItem.objects.all()
-    permission_classes = [IsAuthenticated]
+    queryset = InsuranceCompanyItem.objects.all().order_by('insurance_company__name')
+    permission_classes = [AllowAny]
     pagination_class = None
     
     def get_serializer_class(self):
