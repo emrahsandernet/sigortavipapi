@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Company, CompanyUser, InsuranceCompany, InsuranceCompanyItem, Role, QueryType, RolePermission, Partage
+from .models import Company, CompanyUser, InsuranceCompany, InsuranceCompanyItem, InsuranceCompanyCookie, Role, QueryType, RolePermission, Partage
 
 @admin.register(Company)
 class CompanyAdmin(admin.ModelAdmin):
@@ -30,6 +30,14 @@ class InsuranceCompanyItemAdmin(admin.ModelAdmin):
     search_fields = ('insurance_company__name', 'company__name')
     date_hierarchy = 'created_at'
     filter_horizontal = ('query_types', )
+
+@admin.register(InsuranceCompanyCookie)
+class InsuranceCompanyCookieAdmin(admin.ModelAdmin):
+    list_display = ('insurance_company_item', 'name', 'domain', 'expires', 'http_only', 'secure', 'created_at')
+    list_filter = ('http_only', 'secure', 'same_site', 'priority', 'created_at')
+    search_fields = ('name', 'domain', 'insurance_company_item__insurance_company__name')
+    date_hierarchy = 'created_at'
+    raw_id_fields = ('insurance_company_item',)
 
 @admin.register(Role)
 class RoleAdmin(admin.ModelAdmin):

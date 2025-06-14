@@ -174,4 +174,37 @@ class InsuranceCompanyItem(models.Model):
         verbose_name_plural = "Sigorta Şirketi Öğeleri"
         ordering = ["-created_at"]
 
+class InsuranceCompanyCookie(models.Model):
+    insurance_company_item = models.ForeignKey(InsuranceCompanyItem, verbose_name="Sigorta Şirketi Öğesi", on_delete=models.CASCADE, related_name='cookies')
+    name = models.CharField(verbose_name="Cookie Adı", max_length=255)
+    value = models.TextField(verbose_name="Cookie Değeri")
+    domain = models.CharField(verbose_name="Domain", max_length=255)
+    path = models.CharField(verbose_name="Path", max_length=255, default="/")
+    expires = models.DateTimeField(verbose_name="Son Kullanma Tarihi", null=True, blank=True)
+    creation = models.DateTimeField(verbose_name="Oluşturulma Tarihi", null=True, blank=True)
+    last_access = models.DateTimeField(verbose_name="Son Erişim Tarihi", null=True, blank=True)
+    http_only = models.BooleanField(verbose_name="HTTP Only", default=False)
+    secure = models.BooleanField(verbose_name="Secure", default=False)
+    same_site = models.IntegerField(verbose_name="SameSite", default=0, choices=[
+        (0, 'None'),
+        (1, 'Lax'), 
+        (2, 'Strict')
+    ])
+    priority = models.IntegerField(verbose_name="Priority", default=0, choices=[
+        (0, 'Low'),
+        (1, 'Medium'),
+        (2, 'High')
+    ])
+    created_at = models.DateTimeField(verbose_name="Kayıt Tarihi", auto_now_add=True)
+    updated_at = models.DateTimeField(verbose_name="Güncellenme Tarihi", auto_now=True)
+    
+    def __str__(self):
+        return f"{self.insurance_company_item} - {self.name}"
+    
+    class Meta:
+        verbose_name = "Sigorta Şirketi Cookie"
+        verbose_name_plural = "Sigorta Şirketi Cookies"
+        ordering = ["-created_at"]
+        unique_together = ['insurance_company_item', 'name', 'domain']
+
 

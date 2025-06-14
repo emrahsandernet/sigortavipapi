@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Company, CompanyUser, InsuranceCompany, InsuranceCompanyItem, Role, QueryType, RolePermission, Partage
+from .models import Company, CompanyUser, InsuranceCompany, InsuranceCompanyItem, InsuranceCompanyCookie, Role, QueryType, RolePermission, Partage
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from rest_framework.exceptions import ValidationError
@@ -213,4 +213,14 @@ class InsuranceCompanyItemDetailSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = InsuranceCompanyItem
-        fields = '__all__' 
+        fields = '__all__'
+
+class InsuranceCompanyCookieSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InsuranceCompanyCookie
+        fields = '__all__'
+
+class InsuranceCompanyCookieCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InsuranceCompanyCookie
+        exclude = ['created_at', 'updated_at'] 

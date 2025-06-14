@@ -4,11 +4,12 @@ from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.authtoken.models import Token
-from .models import Company, CompanyUser, InsuranceCompany, InsuranceCompanyItem, Role, QueryType, RolePermission, Partage
+from .models import Company, CompanyUser, InsuranceCompany, InsuranceCompanyItem, InsuranceCompanyCookie, Role, QueryType, RolePermission, Partage
 from .serializers import (
     CompanySerializer, CompanyUserSerializer, CompanyUserCreateSerializer,
     InsuranceCompanySerializer, InsuranceCompanyItemSerializer, InsuranceCompanyItemDetailSerializer, 
-    InsuranceCompanyItemCreateUpdateSerializer, UserSerializer, RoleSerializer, RoleDetailSerializer, 
+    InsuranceCompanyItemCreateUpdateSerializer, InsuranceCompanyCookieSerializer, InsuranceCompanyCookieCreateSerializer,
+    UserSerializer, RoleSerializer, RoleDetailSerializer, 
     QueryTypeSerializer, RolePermissionSerializer, PartageSerializer, PartageDetailSerializer,
     CompanyLoginSerializer
 )
@@ -854,6 +855,139 @@ class InsuranceCompanyItemViewSet(viewsets.ModelViewSet):
     @swagger_auto_schema(
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
+            required=['cookies'],
+            properties={
+                'cookies': openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Schema(
+                        type=openapi.TYPE_OBJECT,
+                        properties={
+                            'name': openapi.Schema(type=openapi.TYPE_STRING),
+                            'value': openapi.Schema(type=openapi.TYPE_STRING),
+                            'domain': openapi.Schema(type=openapi.TYPE_STRING),
+                            'path': openapi.Schema(type=openapi.TYPE_STRING, default='/'),
+                            'expires': openapi.Schema(type=openapi.TYPE_STRING, format='date-time', description='ISO format: 2023-12-31T23:59:59Z'),
+                            'creation': openapi.Schema(type=openapi.TYPE_STRING, format='date-time'),
+                            'lastAccess': openapi.Schema(type=openapi.TYPE_STRING, format='date-time'),
+                            'httpOnly': openapi.Schema(type=openapi.TYPE_BOOLEAN, default=False),
+                            'secure': openapi.Schema(type=openapi.TYPE_BOOLEAN, default=False),
+                            'sameSite': openapi.Schema(type=openapi.TYPE_INTEGER, default=0, description='0: None, 1: Lax, 2: Strict'),
+                            'priority': openapi.Schema(type=openapi.TYPE_INTEGER, default=0, description='0: Low, 1: Medium, 2: High'),
+                        }
+                    ),
+                    description='Cookie listesi'
+                ),
+                'clearExisting': openapi.Schema(type=openapi.TYPE_BOOLEAN, default=True, description='Mevcut cookie\'leri temizle'),
+            },
+        )
+    )
+    @action(detail=True, methods=['post'])
+    def update_cookies_bulk(self, request, pk=None):
+        """
+        Belirtilen InsuranceCompanyItem'ın cookie'lerini toplu olarak günceller
+        """
+        item = self.get_object()
+        cookies_data = request.data.get('cookies', [])
+        clear_existing = request.data.get('clearExisting', True)
+        
+        if not isinstance(cookies_data, list):
+            return Response({"error": "cookies must be a list"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            # Mevcut cookie'leri temizle (istenirse)
+            if clear_existing:
+                InsuranceCompanyCookie.objects.filter(insurance_company_item=item).delete()
+            
+            created_cookies = []
+            updated_cookies = []
+            
+            for cookie_data in cookies_data:
+                # Tarih alanlarını parse et
+                expires = None
+                creation = None
+                last_access = None
+                
+                if cookie_data.get('expires'):
+                    try:
+                        from datetime import datetime
+                        expires = datetime.fromisoformat(cookie_data['expires'].replace('Z', '+00:00'))
+                    except:
+                        pass
+                
+                if cookie_data.get('creation'):
+                    try:
+                        creation = datetime.fromisoformat(cookie_data['creation'].replace('Z', '+00:00'))
+                    except:
+                        pass
+                
+                if cookie_data.get('lastAccess'):
+                    try:
+                        last_access = datetime.fromisoformat(cookie_data['lastAccess'].replace('Z', '+00:00'))
+                    except:
+                        pass
+                
+                # Cookie'yi oluştur veya güncelle
+                cookie, created = InsuranceCompanyCookie.objects.update_or_create(
+                    insurance_company_item=item,
+                    name=cookie_data.get('name', ''),
+                    domain=cookie_data.get('domain', ''),
+                    defaults={
+                        'value': cookie_data.get('value', ''),
+                        'path': cookie_data.get('path', '/'),
+                        'expires': expires,
+                        'creation': creation,
+                        'last_access': last_access,
+                        'http_only': cookie_data.get('httpOnly', False),
+                        'secure': cookie_data.get('secure', False),
+                        'same_site': cookie_data.get('sameSite', 0),
+                        'priority': cookie_data.get('priority', 0),
+                    }
+                )
+                
+                if created:
+                    created_cookies.append(cookie.name)
+                else:
+                    updated_cookies.append(cookie.name)
+            
+            return Response({
+                "message": "Cookie'ler başarıyla güncellendi",
+                "item_id": item.id,
+                "created_count": len(created_cookies),
+                "updated_count": len(updated_cookies),
+                "created_cookies": created_cookies,
+                "updated_cookies": updated_cookies
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['get'])
+    def get_cookies(self, request, pk=None):
+        """
+        Belirtilen InsuranceCompanyItem'ın cookie'lerini listeler
+        """
+        item = self.get_object()
+        cookies = InsuranceCompanyCookie.objects.filter(insurance_company_item=item)
+        serializer = InsuranceCompanyCookieSerializer(cookies, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['delete'])
+    def clear_cookies(self, request, pk=None):
+        """
+        Belirtilen InsuranceCompanyItem'ın tüm cookie'lerini siler
+        """
+        item = self.get_object()
+        deleted_count = InsuranceCompanyCookie.objects.filter(insurance_company_item=item).delete()[0]
+        
+        return Response({
+            "message": "Cookie'ler başarıyla silindi",
+            "item_id": item.id,
+            "deleted_count": deleted_count
+        }, status=status.HTTP_200_OK)
+
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
             required=['cookie'],
             properties={
                 'cookie': openapi.Schema(type=openapi.TYPE_STRING, description='Cookie metni', default='session_id=abc123; token=xyz789'),
@@ -863,7 +997,7 @@ class InsuranceCompanyItemViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def update_cookie(self, request, pk=None):
         """
-        Belirtilen InsuranceCompanyItem'ın cookie'sini günceller
+        Belirtilen InsuranceCompanyItem'ın cookie'sini günceller (eski format)
         """
         item = self.get_object()
         cookie = request.data.get('cookie')
