@@ -111,12 +111,20 @@ class InsuranceCompanySerializer(serializers.ModelSerializer):
         model = InsuranceCompany
         fields = '__all__'
 
+class InsuranceCompanyCookieSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InsuranceCompanyCookie
+        fields = '__all__'
+
+class InsuranceCompanyCookieCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InsuranceCompanyCookie
+        exclude = ['created_at', 'updated_at']
 
 class PartageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Partage
         fields = '__all__'
-
 
 class PartageDetailSerializer(serializers.ModelSerializer):
     related_companies = serializers.SerializerMethodField()
@@ -215,14 +223,4 @@ class InsuranceCompanyItemDetailSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = InsuranceCompanyItem
-        fields = '__all__'
-
-class InsuranceCompanyCookieSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = InsuranceCompanyCookie
-        fields = '__all__'
-
-class InsuranceCompanyCookieCreateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = InsuranceCompanyCookie
-        exclude = ['created_at', 'updated_at'] 
+        fields = '__all__' 
