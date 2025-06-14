@@ -887,6 +887,7 @@ class InsuranceCompanyItemViewSet(viewsets.ModelViewSet):
         Belirtilen InsuranceCompanyItem'ın cookie'lerini toplu olarak günceller
         """
         item = self.get_object()
+        print(request.data)
         
         # request.data'nın formatını kontrol et
         if isinstance(request.data, list):
@@ -953,6 +954,9 @@ class InsuranceCompanyItemViewSet(viewsets.ModelViewSet):
                         'priority': cookie_data.get('priority', 0),
                     }
                 )
+                
+                # Debug log ekle
+                print(f"Cookie {'created' if created else 'updated'}: {cookie.name} for item {item.id}")
                 
                 if created:
                     created_cookies.append(cookie.name)
