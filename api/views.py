@@ -912,56 +912,101 @@ class InsuranceCompanyItemViewSet(viewsets.ModelViewSet):
             created_cookies = []
             updated_cookies = []
             
+            # Eski cookie formatı için string oluştur
+            cookie_strings = []
+            
             for cookie_data in cookies_data:
+                # C# PascalCase ve Python camelCase field'larını destekle
+                def get_field(data, *field_names):
+                    for field_name in field_names:
+                        if field_name in data:
+                            return data[field_name]
+                    return None
+                
                 # Tarih alanlarını parse et
                 expires = None
                 creation = None
                 last_access = None
                 
-                if cookie_data.get('expires'):
+                expires_str = get_field(cookie_data, 'expires', 'Expires')
+                if expires_str:
                     try:
                         from datetime import datetime
-                        expires = datetime.fromisoformat(cookie_data['expires'].replace('Z', '+00:00'))
-                    except:
+                        if expires_str.endswith('Z'):
+                            expires = datetime.fromisoformat(expires_str.replace('Z', '+00:00'))
+                        else:
+                            expires = datetime.fromisoformat(expires_str)
+                    except Exception as e:
+                        print(f"Expires parse error: {e}")
                         pass
                 
-                if cookie_data.get('creation'):
+                creation_str = get_field(cookie_data, 'creation', 'Creation')
+                if creation_str:
                     try:
-                        creation = datetime.fromisoformat(cookie_data['creation'].replace('Z', '+00:00'))
-                    except:
+                        if creation_str.endswith('Z'):
+                            creation = datetime.fromisoformat(creation_str.replace('Z', '+00:00'))
+                        else:
+                            creation = datetime.fromisoformat(creation_str)
+                    except Exception as e:
+                        print(f"Creation parse error: {e}")
                         pass
                 
-                if cookie_data.get('lastAccess'):
+                last_access_str = get_field(cookie_data, 'lastAccess', 'LastAccess')
+                if last_access_str:
                     try:
-                        last_access = datetime.fromisoformat(cookie_data['lastAccess'].replace('Z', '+00:00'))
-                    except:
+                        if last_access_str.endswith('Z'):
+                            last_access = datetime.fromisoformat(last_access_str.replace('Z', '+00:00'))
+                        else:
+                            last_access = datetime.fromisoformat(last_access_str)
+                    except Exception as e:
+                        print(f"LastAccess parse error: {e}")
                         pass
                 
-                # Cookie'yi oluştur veya güncelle
+                # Field'ları oku
+                name = get_field(cookie_data, 'name', 'Name') or ''
+                value = get_field(cookie_data, 'value', 'Value') or ''
+                domain = get_field(cookie_data, 'domain', 'Domain') or ''
+                path = get_field(cookie_data, 'path', 'Path') or '/'
+                http_only = get_field(cookie_data, 'httpOnly', 'HttpOnly') or False
+                secure = get_field(cookie_data, 'secure', 'Secure') or False
+                same_site = get_field(cookie_data, 'sameSite', 'SameSite') or 0
+                priority = get_field(cookie_data, 'priority', 'Priority') or 0
+                
+                # Eski format için cookie string'e ekle
+                cookie_strings.append(f"{name}={value}")
+                
+                # Yeni tabloya cookie'yi oluştur veya güncelle
                 cookie, created = InsuranceCompanyCookie.objects.update_or_create(
                     insurance_company_item=item,
-                    name=cookie_data.get('name', ''),
-                    domain=cookie_data.get('domain', ''),
+                    name=name,
+                    domain=domain,
                     defaults={
-                        'value': cookie_data.get('value', ''),
-                        'path': cookie_data.get('path', '/'),
+                        'value': value,
+                        'path': path,
                         'expires': expires,
                         'creation': creation,
                         'last_access': last_access,
-                        'http_only': cookie_data.get('httpOnly', False),
-                        'secure': cookie_data.get('secure', False),
-                        'same_site': cookie_data.get('sameSite', 0),
-                        'priority': cookie_data.get('priority', 0),
+                        'http_only': http_only,
+                        'secure': secure,
+                        'same_site': same_site,
+                        'priority': priority,
                     }
                 )
                 
                 # Debug log ekle
-                print(f"Cookie {'created' if created else 'updated'}: {cookie.name} for item {item.id}")
+                print(f"Cookie {'created' if created else 'updated'}: {name} for item {item.id}")
                 
                 if created:
-                    created_cookies.append(cookie.name)
+                    created_cookies.append(name)
                 else:
-                    updated_cookies.append(cookie.name)
+                    updated_cookies.append(name)
+            
+            # Eski cookie alanını da güncelle
+            if cookie_strings:
+                legacy_cookie_string = "; ".join(cookie_strings)
+                item.cookie = legacy_cookie_string
+                item.save(update_fields=['cookie'])
+                print(f"Legacy cookie updated with {len(cookie_strings)} cookies")
             
             return Response({
                 "message": "Cookie'ler başarıyla güncellendi",
