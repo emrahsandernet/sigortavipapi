@@ -151,6 +151,7 @@ class InsuranceCompanyItemSerializer(serializers.ModelSerializer):
     query_types = QueryTypeSerializer(many=True, read_only=True)
     same_insurance_company_items = serializers.SerializerMethodField()
     insurance_company = InsuranceCompanySerializer(read_only=True)
+    cookies = InsuranceCompanyCookieSerializer(many=True, read_only=True)
     
     class Meta:
         model = InsuranceCompanyItem
@@ -210,6 +211,7 @@ class InsuranceCompanyItemDetailSerializer(serializers.ModelSerializer):
     company = CompanySerializer(read_only=True)
     query_types = QueryTypeSerializer(many=True, read_only=True)
     partage = PartageSerializer(read_only=True)
+    cookies = InsuranceCompanyCookieSerializer(many=True, read_only=True)
     
     class Meta:
         model = InsuranceCompanyItem
