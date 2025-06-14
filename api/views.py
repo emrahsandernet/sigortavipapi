@@ -887,8 +887,18 @@ class InsuranceCompanyItemViewSet(viewsets.ModelViewSet):
         Belirtilen InsuranceCompanyItem'ın cookie'lerini toplu olarak günceller
         """
         item = self.get_object()
-        cookies_data = request.data.get('cookies', [])
-        clear_existing = request.data.get('clearExisting', True)
+        
+        # request.data'nın formatını kontrol et
+        if isinstance(request.data, list):
+            # Doğrudan cookie listesi gönderilmiş
+            cookies_data = request.data
+            clear_existing = True
+        elif isinstance(request.data, dict):
+            # Object formatında gönderilmiş
+            cookies_data = request.data.get('cookies', [])
+            clear_existing = request.data.get('clearExisting', True)
+        else:
+            return Response({"error": "Invalid data format"}, status=status.HTTP_400_BAD_REQUEST)
         
         if not isinstance(cookies_data, list):
             return Response({"error": "cookies must be a list"}, status=status.HTTP_400_BAD_REQUEST)
